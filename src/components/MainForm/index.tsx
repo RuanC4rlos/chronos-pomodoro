@@ -7,14 +7,15 @@ import type { TaskModel } from '../../models/TaskModel';
 import { useTaskContext } from '../../contexts/TaskContext/useTaskContext';
 import { getNextCycle } from '../../utils/getNextCycle';
 import { getNextCycleType } from '../../utils/getNextCycleType';
-import { formatSecondsToMinutes } from '../../utils/formatSecondsToMinytes';
+import { TaskActionTypes } from '../../contexts/TaskContext/taskActions';
 
 export function MainForm() {
-  const { state, setState } = useTaskContext();
+  const { state, dispatch } = useTaskContext();
   const taskNameInput = useRef<HTMLInputElement>(null);
 
+  // ciclos
   const nextCycle = getNextCycle(state.currentCycle);
-  const nextCycleType = getNextCycleType(nextCycle);
+  const nextCyleType = getNextCycleType(nextCycle);
 
   function handleCreateNewTask(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,61 +23,35 @@ export function MainForm() {
     if (taskNameInput.current === null) return;
 
     const taskName = taskNameInput.current.value.trim();
-    if (taskName.length === 0) {
-      alert(`Nova tarefa criada: ${taskName}`);
+
+    if (!taskName) {
+      alert('Digite o nome da tarefa');
       return;
     }
+
     const newTask: TaskModel = {
       id: Date.now().toString(),
       name: taskName,
       startDate: Date.now(),
       completeDate: null,
-      interruptedDate: null,
-      duration: state.config[nextCycleType],
-      type: nextCycleType,
+      interruptDate: null,
+      duration: state.config[nextCyleType],
+      type: nextCyleType,
     };
 
-    const secondsRemaining = newTask.duration * 60;
-
-    setState(prevState => {
-      return {
-        ...prevState,
-        config: { ...prevState.config },
-        activeTask: newTask,
-        currentCycle: nextCycle,
-        secondsRemaining,
-        formattedSecondsRemaining: formatSecondsToMinutes(secondsRemaining),
-        tasks: [...prevState.tasks, newTask],
-      };
-    });
+    dispatch({ type: TaskActionTypes.START_TASK, payload: newTask });
   }
 
-  function handleInterruptTask(
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-  ) {
-    e.preventDefault();
-
-    setState(prevState => {
-      return {
-        ...prevState,
-        activeTask: null,
-        secondsRemaining: 0,
-        formattedSecondsRemaining: '00:00',
-        tasks: prevState.tasks.map(task => {
-          if (prevState.activeTask && prevState.activeTask.id === task.id) {
-            return { ...task, interruptedDate: Date.now() };
-          }
-          return task;
-        }),
-      };
-    });
+  function handleInterruptTask() {
+    dispatch({ type: TaskActionTypes.INTERRUPT_TASK });
   }
+
   return (
     <form onSubmit={handleCreateNewTask} className='form' action=''>
       <div className='formRow'>
         <DefaultInput
           labelText='task'
-          id='task'
+          id='meuInput'
           type='text'
           placeholder='Digite algo'
           ref={taskNameInput}
@@ -95,21 +70,25 @@ export function MainForm() {
       )}
 
       <div className='formRow'>
-        {!state.activeTask ? (
+        {!state.activeTask && (
           <DefaultButton
             aria-label='Iniciar nova tarefa'
             title='Iniciar nova tarefa'
             type='submit'
             icon={<PlayCircleIcon />}
+            key='botao_submit'
           />
-        ) : (
+        )}
+
+        {!!state.activeTask && (
           <DefaultButton
-            aria-label='Interroper tarefa atual'
-            title='Interroper tarefa atual'
+            aria-label='Interromper tarefa atual'
+            title='Interromper tarefa atual'
             type='button'
             color='red'
             icon={<StopCircleIcon />}
             onClick={handleInterruptTask}
+            key='botao_button'
           />
         )}
       </div>
