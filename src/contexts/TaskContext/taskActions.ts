@@ -1,4 +1,5 @@
 import type { TaskModel } from '../../models/TaskModel';
+import type { TaskStateModel } from '../../models/TaskStateModel';
 
 // Substituindo o Enum por um Objeto Constante
 export const TaskActionTypes = {
@@ -7,6 +8,7 @@ export const TaskActionTypes = {
   RESET_STATE: 'RESET_STATE',
   COUNT_DOWN: 'COUNT_DOWN',
   COMPLETE_TASK: 'COMPLETE_TASK',
+  CHANGE_SETTINGS: 'CHANGE_SETTINGS',
 } as const;
 
 // Extraindo o tipo dos valores do objeto (para usar em tipagens)
@@ -21,6 +23,10 @@ export type TaskActionWithPayload =
   | {
       type: typeof TaskActionTypes.COUNT_DOWN; // Note o uso de typeof
       payload: { secondsRemaining: number };
+    }
+  | {
+      type: typeof TaskActionTypes.CHANGE_SETTINGS; // Note o uso de typeof
+      payload: TaskStateModel['config'];
     };
 
 export type TaskActionsWithoutPayload =
