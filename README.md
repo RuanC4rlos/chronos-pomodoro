@@ -1,73 +1,91 @@
-# React + TypeScript + Vite
+# Chronos Pomodoro 🍅
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Uma aplicação de produtividade focada em precisão temporal e gerenciamento de
+> ciclos, desenvolvida com React, TypeScript e Web Workers.
 
-Currently, two official plugins are available:
+![Project Status](https://img.shields.io/badge/status-concluído-brightgreen)
+![Tech](https://img.shields.io/badge/tech-React%20%7C%20TypeScript%20%7C%20Vite-blue)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📸 Visão Geral
 
-## React Compiler
+A interface foi projetada para ser limpa e direta, com feedback visual claro do
+estado atual do ciclo.
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+|                    Home (Timer & Foco)                     |                Configurações (Personalização)                 |
+| :--------------------------------------------------------: | :-----------------------------------------------------------: |
+| ![Página Inicial](./screenshots/chronos-pomodoro-home.png) | ![Configurações](./screenshots/chronos-pomodoro-settings.png) |
+|                  **Histórico de Tarefas**                  |                        **Página 404**                         |
+|  ![Histórico](./screenshots/chronos-pomodoro-history.png)  |     ![Not Found](./screenshots/chronos-pomodoro-page.png)     |
 
-## Expanding the ESLint configuration
+## 🧠 Engenharia e Decisões Arquiteturais
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Este não é apenas mais um timer. A arquitetura foi pensada para resolver
+problemas comuns em aplicações de cronometragem baseadas em browser e para
+garantir escalabilidade.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 1. Precisão Temporal com Web Workers
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Navegadores modernos reduzem a prioridade de execução de JavaScript em abas
+inativas (throttling), o que faz com que `setInterval` ou `setTimeout` comuns
+percam precisão, atrasando o timer.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Solução:** Implementei um **Web Worker** dedicado (`timerWorker.js`). O
+  contador roda em uma thread separada (background thread), garantindo que o
+  tempo seja contabilizado corretamente mesmo se o usuário mudar de aba ou
+  minimizar o navegador.
+- **Padrão Singleton:** A classe `TimerWorkerManager` utiliza o padrão Singleton
+  para garantir que exista apenas uma instância do Worker gerenciando o tempo em
+  toda a aplicação.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Gestão de Estado com Context API + Reducer
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Para evitar _prop drilling_ e manter a lógica de estado previsível:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Utilizei `useReducer` para centralizar as transições de estado complexas
+  (iniciar task, interromper, finalizar, trocar configurações).
+- A lógica de negócio pura reside no reducer, facilitando testes e manutenção.
+
+### 3. Persistência e Recuperação
+
+- O estado da aplicação é persistido no `localStorage`. Ao recarregar a página,
+  o `TaskContextProvider` reidrata o estado, permitindo que o usuário não perca
+  suas configurações ou histórico.
+
+### 4. Clean Code e Organização
+
+O projeto segue uma estrutura modular:
+
+- `adapters/`: Camada para isolar dependências externas (ex: `showMessage`).
+- `models/`: Definições de tipos TypeScript para garantir consistência de dados.
+- `templates/`: Componentes de layout reutilizáveis.
+- `utils/`: Funções puras auxiliares (formatação, ordenação).
+
+## ✨ Funcionalidades
+
+- **Ciclos Automáticos:** Gerenciamento inteligente de Foco -> Pausa Curta ->
+  Pausa Longa (a cada 4 ciclos).
+- **Histórico Detalhado:** Registro de tarefas completas e interrompidas.
+- **Ordenação:** Tabela de histórico ordenável por nome, duração ou data.
+- **Configuração Customizável:** O usuário define os tempos de foco e pausas.
+- **Feedback Sonoro:** Alerta de áudio ao finalizar um ciclo.
+- **Responsividade:** Interface adaptável para dispositivos móveis e desktop.
+
+## 🚀 Como rodar o projeto
+
+Pré-requisitos: Node.js instalado.
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/RuanC4rlos/chronos-pomodoro.git
+
+# 2. Entre na pasta
+cd chronos-pomodoro
+
+# 3. Instale as dependências
+npm install
+# ou
+yarn install
+
+# 4. Rode o servidor de desenvolvimento
+npm run dev
 ```
